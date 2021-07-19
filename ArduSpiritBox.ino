@@ -43,6 +43,7 @@ void setMenu(byte touchPressed, bool longPressed);
  */
 
 // include the library code:
+//https://www.electromaker.io/project/view/amfmsw-radio-receiver-si4730-si4735
 #include <LiquidCrystal.h>
 #define SCREEN_HEIGHT 2
 #define SCREEN_WIDTH 16
@@ -54,15 +55,25 @@ typedef struct MenuStruct
     uint8_t menuSz;
 } MenuStruct;
 MenuStruct *menustruct = NULL;
-char MENU_LEVEL1[][16] = {"set range", "set record", "exit"};
+const char  MENU_LEVEL1[][SCREEN_WIDTH+1] = {"see range base","set range", "set record", "exit"};
 #define MENU_LEVEL1_SZ 3
 typedef enum
 {
-    AM,
-    FM,
-    LW,
-    USB
+    AM=1,
+    FM=2,
+    SW=3,
+    LW=4
 } FREQ_TYPE;
+typedef struct {
+  float start;
+  float end;
+  uint8_t freqPow;
+  FREQ_TYPE type;
+}FreqRange;
+//AM 520->1710Khz FM 64->108Mhz SW 2.300->21.850Mhz LW 153 -> 279Khz
+#define RADIO_RANGE (float[][2]){{520.00,1710.00},{64.00,108.00},{2.300,21.850},{153.00,279.00}}
+#define RADIO_STEP (float[]){1.00,0.5,0.01,1}
+#define POW_FREQ  (uint_8_t[]) {3,6,6,3}
 typedef struct
 {
     float start;
@@ -74,6 +85,7 @@ typedef struct
     float freq;
     unsigned short sweepSpeed;
     float temp, lastTemp, lastTemp_1;
+    FreqRange *ranges;
 
 } WorkingValues;
 WorkingValues *wValues = NULL;
@@ -115,29 +127,30 @@ void setup()
 }
 void setScreen()
 {
-    char buf[7] = "";
-    // lcd.clear();
+    char  buf[7]="";
+   // lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("FM");
     lcd.setCursor(SCREEN_WIDTH - 5, 1);
-    dtostrf(wValues->temp, 5, 2, buf); //wValues->temp);
-                                       //Serial.println(buf);
+    dtostrf(wValues->temp,5,2,buf);//wValues->temp);
+  //Serial.println(buf);
     lcd.print(buf);
     lcd.setCursor(SCREEN_WIDTH - 6, 0);
     lcd.print(wValues->sweepSpeed);
     lcd.setCursor(0, 1);
     //sprintf(buf,"%2d",wValues->freq);
-    dtostrf(wValues->freq, 6, 2, buf);
-    lcd.print(buf);
+    dtostrf(wValues->freq,6,2,buf);
+  lcd.print(buf);
 }
 void loop()
 {
     getTemp();
     if (menustruct == NULL)
     {
-        setScreen();
-        delay(500);
+      setScreen();
+  delay(500);
     }
+    
 }
 
 void setMenu(byte touchPressed, bool longPressed)
@@ -183,10 +196,10 @@ void setMenu(byte touchPressed, bool longPressed)
     lcd.print('>');
     for (int i = menustruct->levelSelector, y = 0; y < SCREEN_HEIGHT && i < menustruct->menuSz; i++, y++)
     {
-        Serial.println((char *)menustruct->menuContent + i * 16);
+        Serial.println((char *)menustruct->menuContent + i * (SCREEN_WIDTH+1));
         lcd.setCursor(1, y);
 
-        lcd.print((char *)menustruct->menuContent + i * 16);
+        lcd.print((char *)menustruct->menuContent + i * (SCREEN_WIDTH+1));
     }
 }
 void inputKbPressed()

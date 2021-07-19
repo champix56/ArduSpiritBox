@@ -55,17 +55,19 @@ typedef struct MenuStruct
     uint8_t menuSz;
 } MenuStruct;
 MenuStruct *menustruct = NULL;
-char MENU_LEVEL1[][16] = {"set range", "set record", "exit"};
+const char MENU_LEVEL1[][SCREEN_WIDTH+1] = {"see range base","set range", "set record", "exit"};
 #define MENU_LEVEL1_SZ 3
 typedef enum
 {
     AM=1,
     FM=2,
     SW=3,
-    DSP=4
+    LW=4
 } FREQ_TYPE;
-#define RADIO_RANGE (float[][2]){{1.24,2.4},{34.5,3.54},{5.8,2.5},{88,108}}
-#define RADIO_STEP (float[]){0.001,0.01,0.1,0.5}
+//AM 520->1710Khz FM 64->108Mhz SW 2.300->21.850Mhz LW 153 -> 279Khz
+#define RADIO_RANGE (float[][2]){{520.00,1710.00},{64.00,108.00},{2.300,21.850},{153.00,279.00}}
+#define RADIO_STEP (float[]){1.00,0.5,0.01,1}
+#define POW_FREQ  (uint_8_t[]) {3,6,6,3}
 typedef struct
 {
     float start;
@@ -118,18 +120,18 @@ void setup()
 }
 void setScreen()
 {
-  	char  buf[7]="";
+    char  buf[7]="";
    // lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("FM");
     lcd.setCursor(SCREEN_WIDTH - 5, 1);
-  	dtostrf(wValues->temp,5,2,buf);//wValues->temp);
+    dtostrf(wValues->temp,5,2,buf);//wValues->temp);
   //Serial.println(buf);
     lcd.print(buf);
     lcd.setCursor(SCREEN_WIDTH - 6, 0);
     lcd.print(wValues->sweepSpeed);
     lcd.setCursor(0, 1);
-  	//sprintf(buf,"%2d",wValues->freq);
+    //sprintf(buf,"%2d",wValues->freq);
     dtostrf(wValues->freq,6,2,buf);
   lcd.print(buf);
 }
@@ -187,10 +189,10 @@ void setMenu(byte touchPressed, bool longPressed)
     lcd.print('>');
     for (int i = menustruct->levelSelector, y = 0; y < SCREEN_HEIGHT && i < menustruct->menuSz; i++, y++)
     {
-        Serial.println((char *)menustruct->menuContent + i * 16);
+        Serial.println((char *)menustruct->menuContent + i * (SCREEN_WIDTH+1));
         lcd.setCursor(1, y);
 
-        lcd.print((char *)menustruct->menuContent + i * 16);
+        lcd.print((char *)menustruct->menuContent + i * (SCREEN_WIDTH+1));
     }
 }
 void inputKbPressed()

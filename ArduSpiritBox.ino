@@ -47,12 +47,21 @@ void setMenu(byte touchPressed, bool longPressed);
 #include <LiquidCrystal.h>
 #define SCREEN_HEIGHT 2
 #define SCREEN_WIDTH 16
+struct _MenuItem{
+    char ** textContent;
+    uint8_t sz;
+    void(*action)(byte,bool);
+    struct _MenuItem *children;
+};
+typedef struct _MenuItem MenuItem;
+MenuItem *fullMenuContent;
 typedef struct MenuStruct
 {
     uint8_t levelSelector;
     uint8_t level;
     char **menuContent;
     uint8_t menuSz;
+    MenuItem *selectedContent;
 } MenuStruct;
 MenuStruct *menustruct = NULL;
 const char  MENU_LEVEL1[][SCREEN_WIDTH+1] = {"see range base","set range", "set record", "exit"};
@@ -160,38 +169,13 @@ void setMenu(byte touchPressed, bool longPressed)
         Serial.println("no menu execution");
         return;
     }
+
+    ((*fullMenuContent->action)(touchPressed,longPressed));
     lcd.clear();
+  
+    //
 
-    switch (touchPressed)
-    {
-    case BUTTON_VALUE_OK:
-
-        if (menustruct == NULL)
-        {
-            menustruct = (MenuStruct *)calloc(1, sizeof(MenuStruct));
-            menustruct->menuContent = (char **)MENU_LEVEL1;
-            menustruct->menuSz = MENU_LEVEL1_SZ;
-            menustruct->levelSelector = 0;
-            Serial.println("menu enter");
-        }
-        else if (longPressed)
-        {
-            free(menustruct);
-            menustruct = NULL;
-            Serial.println("menu exit");
-            return;
-        }
-
-        break;
-    case BUTTON_VALUE_DW:
-        menustruct->levelSelector = (menustruct->levelSelector == (menustruct->menuSz - 1) ? 0 : menustruct->levelSelector + 1);
-        break;
-    case BUTTON_VALUE_UP:
-        menustruct->levelSelector = (menustruct->levelSelector == 0 ? menustruct->menuSz - 1 : menustruct->levelSelector - 1);
-        break;
-    default:
-        break;
-    }
+    //show menu
     lcd.setCursor(0, 0);
     lcd.print('>');
     for (int i = menustruct->levelSelector, y = 0; y < SCREEN_HEIGHT && i < menustruct->menuSz; i++, y++)
@@ -220,4 +204,69 @@ void inputKbPressed()
     Serial.println(pushedButton2);
     */
     setMenu(pushedButton, longPush);
+}
+
+
+
+void actionMenu1(byte pressed,bool isLong){
+   switch (pressed)
+    {
+    case BUTTON_VALUE_OK:
+
+    if (menustruct == NULL)
+        {
+            menustruct = (MenuStruct *)calloc(1, sizeof(MenuStruct));
+            menustruct->menuContent = (char **)MENU_LEVEL1;
+            menustruct->menuSz = MENU_LEVEL1_SZ;
+            menustruct->levelSelector = 0;
+            Serial.println("menu enter");
+        }
+        else if (isLong)
+        {
+            free(menustruct);
+            menustruct = NULL;
+            menustruct->levelSelector = 0;
+            Serial.println("menu exit");
+            return;
+        }
+        else{
+          //insideMenu
+          
+        }
+
+        break;
+    case BUTTON_VALUE_DW:
+        menustruct->levelSelector = (menustruct->levelSelector == (menustruct->menuSz - 1) ? 0 : menustruct->levelSelector + 1);
+        break;
+    case BUTTON_VALUE_UP:
+        menustruct->levelSelector = (menustruct->levelSelector == 0 ? menustruct->menuSz - 1 : menustruct->levelSelector - 1);
+        break;
+    default:
+        break;
+    }
+  Serial.print(isLong);
+}
+/*  uint8_t levelSelector;
+    uint8_t level;
+    char **menuContent;
+    uint8_t menuSz;
+    MenuItem *items;
+    MenuItem *selectedContent;
+    
+    
+    struct _MenuItem{
+    char ** textContent;
+    uint8_t sz;
+    void(*action)(byte,bool);
+    struct _MenuItem *children;
+};
+    
+    */
+void initMenu(){
+  MenuItem *level=(MenuItem*)calloc(1,sizeof(MenuItem));
+  level->textContent=(char**)MENU_LEVEL1;
+  level->sz=MENU_LEVEL1_SZ;
+  level->action=actionMenu1;
+  fullMenuContent=level;
+  
 }

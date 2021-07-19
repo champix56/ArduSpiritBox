@@ -1,4 +1,7 @@
 //#include "config.h"
+#include <stdio.h>
+#include <stdlib.h>
+
 void setMenu(byte touchPressed, bool longPressed);
 /*
   LiquidCrystal Library - Hello World
@@ -68,9 +71,9 @@ typedef struct
 typedef struct
 {
     FREQ_TYPE freqType;
-  	float freq;
-  	unsigned short sweepSpeed;
-  	float temp,lastTemp,lastTemp_1;
+    float freq;
+    unsigned short sweepSpeed;
+    float temp, lastTemp, lastTemp_1;
 
 } WorkingValues;
 WorkingValues *wValues = NULL;
@@ -86,6 +89,12 @@ LiquidCrystal lcd(12, 11, 6, 5, 4, 3);
 const byte ledPin = 13;
 const byte interruptPin = 2;
 volatile byte state = LOW;
+#define TEMP_PIN A3
+void getTemp()
+{
+    float readVal = (float)analogRead(TEMP_PIN) / 1024;
+    wValues->temp = ((readVal * 5) - 0.5) * 100;
+}
 void setup()
 {
     Serial.begin(9600);
@@ -96,38 +105,47 @@ void setup()
     pinMode(interruptPin, INPUT);
     //init initial struct
     wValues = (WorkingValues *)calloc(1, sizeof(WorkingValues));
-	wValues->freq=107.7F;
-  	wValues->sweepSpeed=300;
-  
+    wValues->freq = 88.900;
+    wValues->sweepSpeed = 300;
+
     attachInterrupt(digitalPinToInterrupt(interruptPin), inputKbPressed, RISING);
-  
-  delay(900);
-  lcd.clear();
+
+    delay(900);
+    lcd.clear();
 }
 void setScreen()
 {
-    lcd.clear();
+    char buf[7] = "";
+    // lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("FM");
-
-    lcd.setCursor(SCREEN_WIDTH - 5, 0);
+    lcd.setCursor(SCREEN_WIDTH - 5, 1);
+    dtostrf(wValues->temp, 5, 2, buf); //wValues->temp);
+                                       //Serial.println(buf);
+    lcd.print(buf);
+    lcd.setCursor(SCREEN_WIDTH - 6, 0);
     lcd.print(wValues->sweepSpeed);
     lcd.setCursor(0, 1);
-    lcd.print(wValues->freq);
+    //sprintf(buf,"%2d",wValues->freq);
+    dtostrf(wValues->freq, 6, 2, buf);
+    lcd.print(buf);
 }
 void loop()
 {
-  delay(500);
-    if(menustruct==NULL)setScreen();
-  
+    getTemp();
+    if (menustruct == NULL)
+    {
+        setScreen();
+        delay(500);
+    }
 }
 
 void setMenu(byte touchPressed, bool longPressed)
 {
     if (touchPressed != BUTTON_VALUE_OK && menustruct == NULL)
     {
-     Serial.println("no menu execution");
-      return;
+        Serial.println("no menu execution");
+        return;
     }
     lcd.clear();
 
@@ -141,16 +159,16 @@ void setMenu(byte touchPressed, bool longPressed)
             menustruct->menuContent = (char **)MENU_LEVEL1;
             menustruct->menuSz = MENU_LEVEL1_SZ;
             menustruct->levelSelector = 0;
-          Serial.println("menu enter");
+            Serial.println("menu enter");
         }
-      	else if (longPressed)
+        else if (longPressed)
         {
             free(menustruct);
             menustruct = NULL;
-          	Serial.println("menu exit");
+            Serial.println("menu exit");
             return;
         }
-        
+
         break;
     case BUTTON_VALUE_DW:
         menustruct->levelSelector = (menustruct->levelSelector == (menustruct->menuSz - 1) ? 0 : menustruct->levelSelector + 1);
@@ -165,10 +183,10 @@ void setMenu(byte touchPressed, bool longPressed)
     lcd.print('>');
     for (int i = menustruct->levelSelector, y = 0; y < SCREEN_HEIGHT && i < menustruct->menuSz; i++, y++)
     {
-        Serial.println((char*)menustruct->menuContent+i*16);
+        Serial.println((char *)menustruct->menuContent + i * 16);
         lcd.setCursor(1, y);
-		
-        lcd.print( (char*)menustruct->menuContent+i*16);
+
+        lcd.print((char *)menustruct->menuContent + i * 16);
     }
 }
 void inputKbPressed()
